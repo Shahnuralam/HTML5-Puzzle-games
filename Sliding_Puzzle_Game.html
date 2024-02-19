@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complex Sliding Puzzle Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #333;
+            margin-top: 20px;
+        }
+
+        #puzzleContainer {
+            width: 500px;
+            height: 500px;
+            border: 5px solid #444;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 5px;
+            margin: 20px auto;
+            background-color: #ddd;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .puzzlePiece {
+            background-color: #f9f9f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-drag: element;
+            user-select: none;
+            font-size: 36px;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .puzzlePiece:hover {
+            background-color: #ccc;
+            transform: scale(1.05);
+        }
+
+        .puzzlePiece:active {
+            transform: scale(0.95);
+        }
+
+        #instructions {
+            margin-top: 20px;
+        }
+
+        h2 {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #888;
+            margin: 5px 0;
+        }
+
+        #shuffleBtn {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            outline: none;
+        }
+
+        #shuffleBtn:hover {
+            background-color: #e64a19;
+        }
+
+        #levelSelector {
+            margin-top: 20px;
+        }
+
+        label {
+            font-size: 18px;
+            color: #444;
+        }
+
+        select {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #fff;
+            color: #444;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            outline: none;
+            margin-left: 10px;
+        }
+
+        select:hover {
+            border-color: #666;
+        }
+
+        select:focus {
+            border-color: #ff5722;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Complex Sliding Puzzle Game</h1>
+    <div id="puzzleContainer"></div>
+    <button id="shuffleBtn">Shuffle Puzzle</button>
+    <div id="levelSelector">
+        <label for="level">Choose a level:</label>
+        <select id="level">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+        </select>
+    </div>
+    <div id="instructions">
+        <h2>How to Play:</h2>
+        <p>1. Click on a tile to swap it with an adjacent tile.</p>
+        <p>2. Rearrange the tiles to solve the puzzle.</p>
+    </div>
+
+    <script>
+        const puzzleContainer = document.getElementById('puzzleContainer');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const levelSelector = document.getElementById('level');
+
+        let tiles = [];
+        let gridSize = 3; // Default grid size
+
+        function shuffle(array) {
+            // Modify shuffle based on the level
+            let iterations = 100; // Default iterations
+            if (levelSelector.value === 'medium') {
+                iterations = 200;
+            } else if (levelSelector.value === 'hard') {
+                iterations = 300;
+            }
+
+            for (let i = 0; i < iterations; i++) {
+                const randomIndex1 = Math.floor(Math.random() * array.length);
+                const randomIndex2 = Math.floor(Math.random() * array.length);
+                [array[randomIndex1], array[randomIndex2]] = [array[randomIndex2], array[randomIndex1]];
+            }
+        }
+
+        function createPuzzle(level) {
+            // Adjust grid size based on the level
+            if (level === 'easy') {
+                gridSize = 3;
+            } else if (level === 'medium') {
+                gridSize = 4;
+            } else if (level === 'hard') {
+                gridSize = 5;
+            }
+
+            // Generate numbers based on grid size
+            const numbers = Array.from({ length: gridSize * gridSize - 1 }, (_, i) => i + 1);
+
+            shuffle(numbers);
+
+            numbers.forEach(number => {
+                const tile = document.createElement('div');
+                tile.className = 'puzzlePiece';
+                tile.textContent = number;
+                tile.addEventListener('click', () => {
+                    const emptyIndex = tiles.findIndex(t => t.textContent === '');
+                    const currentIndex = tiles.indexOf(tile);
+                    if (isAdjacent(currentIndex, emptyIndex)) {
+                        swapTiles(currentIndex, emptyIndex);
+                        checkIfSolved();
+                    }
+                });
+                tiles.push(tile);
+                puzzleContainer.appendChild(tile);
+            });
+
+            // Add the empty tile at the end
+            const emptyTile = document.createElement('div');
+            emptyTile.className = 'puzzlePiece';
+            emptyTile.textContent = '';
+            tiles.push(emptyTile);
+            puzzleContainer.appendChild(emptyTile);
+        }
+
+        function isAdjacent(index1, index2) {
+            const rowDiff = Math.abs(Math.floor(index1 / gridSize) - Math.floor(index2 / gridSize));
+            const colDiff = Math.abs((index1 % gridSize) - (index2 % gridSize));
+            return (rowDiff === 1 && colDiff === 0) || (colDiff === 1 && rowDiff === 0);
+        }
+
+        function swapTiles(index1, index2) {
+            const temp = tiles[index1];
+            tiles[index1] = tiles[index2];
+            tiles[index2] = temp;
+
+            // Update DOM
+            puzzleContainer.innerHTML = '';
+            tiles.forEach(tile => puzzleContainer.appendChild(tile));
+        }
+
+        function checkIfSolved() {
+            const isSolved = tiles.every((tile, index) => {
+                if (index === tiles.length - 1) {
+                    return tile.textContent === '';
+                }
+                return parseInt(tile.textContent) === index + 1;
+            });
+
+            if (isSolved) {
+                alert('Congratulations! You solved the puzzle!');
+            }
+        }
+
+        shuffleBtn.addEventListener('click', () => {
+            shuffle(tiles);
+            puzzleContainer.innerHTML = '';
+            tiles.forEach(tile => puzzleContainer.appendChild(tile));
+        });
+
+        levelSelector.addEventListener('change', () => {
+            const selectedLevel = levelSelector.value;
+            resetPuzzle(selectedLevel);
+        });
+
+        function resetPuzzle(level) {
+            tiles = [];
+            puzzleContainer.innerHTML = '';
+            createPuzzle(level);
+        }
+
+        createPuzzle('easy'); // Default to easy level
+    </script>
+</body>
+
+</html>
